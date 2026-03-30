@@ -8,10 +8,10 @@ import HiddenChamber from './pages/HiddenChamber'
 import Clicker from './games/Clicker'
 import MemoryMatch from './games/MemoryMatch'
 import Quiz from './games/Quiz'
-import Runner from './games/Runner'
-import Hangman from './games/Hangman'
-import TicTacToe from './games/TicTacToe'
-import Dice from './games/Dice'
+//import Runner from './games/Runner'
+//import Hangman from './games/Hangman'
+//import TicTacToe from './games/TicTacToe'
+//import Dice from './games/Dice'
 
 export default function App() {
   return (
