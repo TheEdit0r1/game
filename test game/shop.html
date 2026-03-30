@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛍️ Prize Shop</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body {
+    background-image:
+      radial-gradient(ellipse at 20% 30%, rgba(185,127,255,.1) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(255,215,0,.08) 0%, transparent 55%);
+  }
+
+  .shop-hero { text-align:center; padding:36px 20px 8px; }
+  .shop-hero h1 { font-size:clamp(2rem,6vw,3.2rem); font-weight:900; color:var(--gold); }
+  .shop-hero p  { color:var(--muted); margin-top:8px; }
+
+  .balance-card {
+    max-width:340px; margin:20px auto;
+    background:linear-gradient(135deg,#1e1a30,#2a1f45);
+    border:2px solid rgba(255,215,0,.3);
+    border-radius:20px; padding:24px;
+    text-align:center;
+    box-shadow:0 0 40px rgba(255,215,0,.1);
+  }
+  .balance-card .bal-label { color:var(--muted); font-size:.9rem; letter-spacing:.1em; text-transform:uppercase; }
+  .balance-card .bal-num   { font-size:3.5rem; font-weight:900; color:var(--gold); line-height:1.1; }
+  .balance-card .bal-sub   { color:var(--muted); font-size:.85rem; margin-top:4px; }
+
+  /* TIER SECTIONS */
+  .shop-wrap { max-width:900px; margin:0 auto; padding:0 20px 20px; }
+  .tier-label {
+    display:flex; align-items:center; gap:12px;
+    font-size:.85rem; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.12em;
+    margin:32px 0 16px;
+  }
+  .tier-label::before, .tier-label::after {
+    content:''; flex:1; height:1px; background:rgba(255,255,255,.08);
+  }
+
+  /* PRIZE CARDS */
+  .prizes-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:16px;
+  }
+
+  .prize-card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px;
+    display:flex; flex-direction:column; gap:10px;
+    position:relative; overflow:hidden;
+    transition:transform .2s, box-shadow .2s, border-color .2s;
+  }
+  .prize-card:not(.locked):hover {
+    transform:translateY(-4px);
+    box-shadow:0 12px 40px rgba(0,0,0,.4);
+    border-color:rgba(255,215,0,.3);
+  }
+  .prize-card.locked {
+    opacity:.5; filter:grayscale(.4);
+  }
+
+  .prize-card .p-emoji { font-size:2.4rem; line-height:1; }
+  .prize-card .p-title { font-size:1.1rem; font-weight:800; }
+  .prize-card .p-desc  { font-size:.88rem; color:var(--muted); line-height:1.5; flex:1; }
+  .prize-card .p-fine  { font-size:.78rem; color:rgba(255,255,255,.3); }
+
+  .cost-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    font-weight:900; font-size:1rem;
+    padding:5px 14px; border-radius:20px;
+    background:rgba(255,215,0,.12);
+    border:1px solid rgba(255,215,0,.3);
+    color:var(--gold);
+    width:fit-content;
+  }
+
+  .buy-btn {
+    margin-top:4px;
+    padding:10px 20px;
+    border:none; border-radius:30px;
+    font-weight:700; font-size:.95rem;
+    cursor:pointer;
+    transition:filter .2s, transform .15s;
+    width:100%;
+  }
+  .buy-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  .buy-btn:active { transform:translateY(0); }
+  .buy-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+  .tier-1 .buy-btn { background:linear-gradient(135deg,#7efff5,#38b2ac); color:#0e0e1c; }
+  .tier-2 .buy-btn { background:linear-gradient(135deg,#b97fff,#7c3aed); color:#fff; }
+  .tier-3 .buy-btn { background:linear-gradient(135deg,#ff6ec7,#d93fa0); color:#fff; }
+  .tier-4 .buy-btn { background:linear-gradient(135deg,#ffd700,#ff9900); color:#0e0e1c; }
+  .tier-5 .buy-btn { background:linear-gradient(135deg,#ff4f4f,#b91c1c); color:#fff; }
+
+  .redeemed-stamp {
+    position:absolute; top:12px; right:12px;
+    background:rgba(79,255,127,.15); border:1px solid rgba(79,255,127,.3);
+    color:#4fff7f; font-size:.75rem; font-weight:700;
+    padding:3px 10px; border-radius:10px;
+  }
+
+  /* CONFIRM MODAL */
+  #confirm-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.8); z-index:700;
+    align-items:center; justify-content:center;
+    backdrop-filter:blur(6px);
+  }
+  #confirm-overlay.show { display:flex; }
+  .confirm-box {
+    background:var(--card);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:20px; padding:32px;
+    max-width:380px; width:calc(100% - 40px);
+    text-align:center;
+    animation:popUp .35s cubic-bezier(.175,.885,.32,1.275);
+  }
+  @keyframes popUp { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+  .confirm-box .c-emoji { font-size:3rem; display:block; margin-bottom:12px; }
+  .confirm-box h2  { font-size:1.4rem; font-weight:900; margin-bottom:8px; }
+  .confirm-box p   { color:var(--muted); font-size:.95rem; margin-bottom:20px; }
+  .confirm-box .cost-confirm { font-size:1.3rem; font-weight:900; color:var(--gold); margin-bottom:24px; }
+  .confirm-btns { display:flex; gap:12px; justify-content:center; }
+
+  /* RECEIPT MODAL (after purchase) */
+  #receipt-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.8); z-index:900;
+    align-items:center; justify-content:center;
+    backdrop-filter:blur(6px);
+  }
+  #receipt-overlay.show { display:flex; animation:fadeIn .25s; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  /* Reuse .coupon styles from style.css */
+</style>
+</head>
+<body>
+
+<a class="back-link" href="index.html">← Back to games</a>
+
+<div class="shop-hero">
+  <h1>🛍️ Prize Shop</h1>
+  <p>Spend your hard-earned points on real prizes</p>
+</div>
+
+<div class="balance-card">
+  <div class="bal-label">Your Points</div>
+  <div class="bal-num" data-pts>0</div>
+  <div class="bal-sub">Earn more by playing games</div>
+</div>
+
+<div class="shop-wrap" id="shop-wrap">
+  <!-- Rendered by JS -->
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <span class="c-emoji" id="conf-emoji"></span>
+    <h2 id="conf-title"></h2>
+    <p id="conf-desc"></p>
+    <div class="cost-confirm">Cost: <span id="conf-cost"></span> ⭐</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-gold" onclick="confirmBuy()">Redeem it!</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT (coupon) MODAL -->
+<div id="prize-overlay" onclick="if(event.target===this)closeCoupon()">
+  <div class="coupon">
+    <div class="coupon-top">
+      <span class="coupon-emoji" id="c-emoji">🎁</span>
+      <h2>Redeemed!</h2>
+      <p id="c-source">Prize Shop</p>
+    </div>
+    <div class="coupon-divider"><div class="circle"></div><div class="dashes"></div><div class="circle"></div></div>
+    <div class="coupon-body">
+      <div class="coupon-title" id="c-title"></div>
+      <div class="coupon-desc" id="c-desc"></div>
+      <button class="btn btn-gold coupon-close" onclick="closeCoupon()">Got it! 🎉</button>
+      <div class="coupon-footer" id="c-fine"></div>
+    </div>
+  </div>
+</div>
+
+<canvas id="confetti-canvas"></canvas>
+<script src="js/prizes.js"></script>
+<script>
+const SHOP = [
+  {
+    tier: 1, tierLabel: "⭐ Starter — 50 pts",
+    items: [
+      { id:"movie",    emoji:"🎬", title:"Movie Night Pick",    cost:50,  desc:"You choose what we watch — no arguments from me.", fine:"Romcoms, horrors, anime — anything goes." },
+      { id:"playlist", emoji:"🎵", title:"Playlist Control",    cost:50,  desc:"Full control of the music for an entire day.",     fine:"Even in the car." },
+      { id:"pizza",    emoji:"🍕", title:"Pizza Night on Me",   cost:50,  desc:"I order your favourite pizza — I pay for everything.", fine:"Toppings fully your choice." },
+    ]
+  },
+  {
+    tier: 2, tierLabel: "💜 Good Stuff — 150 pts",
+    items: [
+      { id:"facetime",  emoji:"📱", title:"Guaranteed FaceTime",  cost:150, desc:"I'll make time for a FaceTime call with you, whenever you want. No excuses.",  fine:"Even if I'm busy. I'll make it work." },
+      { id:"stayup",    emoji:"🌙", title:"Stay Up With You",      cost:150, desc:"I'll stay up as late as you need — just to talk, keep you company, or have fun.", fine:"Night owl mode: fully on." },
+      { id:"delivery",  emoji:"🚀", title:"Any Food Delivery",     cost:150, desc:"Order from anywhere you like — I'll cover the bill.",  fine:"No price complaints." },
+      { id:"voicenote", emoji:"💌", title:"Long Voice Note",       cost:150, desc:"A long, heartfelt voice note from me — everything I appreciate about you.",      fine:"No skipping. Listen to the whole thing." },
+    ]
+  },
+  {
+    tier: 3, tierLabel: "💗 Treat Yourself — 300 pts",
+    items: [
+      { id:"massage",  emoji:"💆", title:"Full Massage",         cost:300, desc:"A proper full massage — back, head, feet, whatever you want, for as long as you want.", fine:"No time limit. You're the boss." },
+      { id:"pamper",   emoji:"🛁", title:"Pamper Evening",       cost:300, desc:"I plan a full relaxing evening for you. Snacks, vibes, comfort — all sorted.",        fine:"You just show up." },
+      { id:"dinner",   emoji:"🍽️", title:"Dinner Out on Me",    cost:300, desc:"I take you out for dinner — you pick the restaurant, I pay the whole bill.",            fine:"No price limit. Pick somewhere nice." },
+      { id:"gift",     emoji:"🎁", title:"Surprise Gift",        cost:300, desc:"A gift from me, chosen personally. You won't know what it is until you get it.",        fine:"The fun is in not knowing." },
+    ]
+  },
+  {
+    tier: 4, tierLabel: "👑 Big Prizes — 600 pts",
+    items: [
+      { id:"kidslox",  emoji:"🔑", title:"Snoop Pass",           cost:600, desc:"You get my Kidslox login. Have a proper look around — I don't mind.",                 fine:"One-time use. No judging." },
+      { id:"shopping", emoji:"🛍️", title:"Shopping Spree",       cost:600, desc:"A full shopping trip — you pick where, I carry the bags and foot the bill.",           fine:"Within a budget we agree on." },
+      { id:"spa",      emoji:"🧖", title:"Spa Day",              cost:600, desc:"A proper spa day — booked and paid for by me. You just enjoy it.",                     fine:"You choose the treatments." },
+    ]
+  },
+  {
+    tier: 5, tierLabel: "🌟 Ultimate — 1000 pts",
+    items: [
+      { id:"vipday", emoji:"👑", title:"VIP Day",               cost:1000, desc:"An entire day dedicated entirely to you. Whatever you want, wherever you want — I'm all yours.", fine:"No limits. Queen for a full day." },
+    ]
+  },
+];
+
+const REDEEMED_KEY = 'gamezone_redeemed';
+function getRedeemed() { try { return JSON.parse(localStorage.getItem(REDEEMED_KEY) || '[]'); } catch{ return []; } }
+function markRedeemed(id) { const r = getRedeemed(); r.push(id + '_' + Date.now()); localStorage.setItem(REDEEMED_KEY, JSON.stringify(r)); }
+
+let pendingItem = null;
+
+function openConfirm(item) {
+  pendingItem = item;
+  document.getElementById('conf-emoji').textContent = item.emoji;
+  document.getElementById('conf-title').textContent = item.title;
+  document.getElementById('conf-desc').textContent  = item.desc;
+  document.getElementById('conf-cost').textContent  = item.cost.toLocaleString();
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  pendingItem = null;
+}
+
+function confirmBuy() {
+  if (!pendingItem) return;
+  const pts = getPoints();
+  if (pts < pendingItem.cost) { closeConfirm(); return; }
+  spendPoints(pendingItem.cost);
+  markRedeemed(pendingItem.id);
+  closeConfirm();
+  showCoupon({ emoji: pendingItem.emoji, title: pendingItem.title, desc: pendingItem.desc, fine: pendingItem.fine }, "Prize Shop");
+  renderShop(); // refresh locked states
+}
+
+function renderShop() {
+  const pts = getPoints();
+  const wrap = document.getElementById('shop-wrap');
+  wrap.innerHTML = '';
+
+  SHOP.forEach(tier => {
+    const section = document.createElement('div');
+
+    const label = document.createElement('div');
+    label.className = 'tier-label';
+    label.textContent = tier.tierLabel;
+    section.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'prizes-grid';
+
+    tier.items.forEach(item => {
+      const canAfford = pts >= item.cost;
+      const card = document.createElement('div');
+      card.className = `prize-card tier-${tier.tier} ${canAfford ? '' : 'locked'}`;
+
+      card.innerHTML = `
+        <span class="p-emoji">${item.emoji}</span>
+        <div class="p-title">${item.title}</div>
+        <div class="p-desc">${item.desc}</div>
+        <div class="cost-badge">⭐ ${item.cost.toLocaleString()} pts</div>
+        <button class="buy-btn" ${canAfford ? '' : 'disabled'} onclick='openConfirm(${JSON.stringify(item)})'>
+          ${canAfford ? 'Redeem →' : `Need ${(item.cost - pts).toLocaleString()} more pts`}
+        </button>
+        <div class="p-fine">${item.fine}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    wrap.appendChild(section);
+  });
+}
+
+// Render on load & refresh when storage changes (other tabs/pages)
+renderShop();
+window.addEventListener('storage', () => { refreshPointsBar(); renderShop(); });
+</script>
+</body>
+</html>
